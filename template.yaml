@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Delivery AI Assistant - serverless order orchestration with Amazon Bedrock
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: anthropic.claude-3-haiku-20240307-v1:0
+    Description: Foundation model enabled in Amazon Bedrock for the target region.
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:8080
+    Description: Front-end origin allowed by API Gateway CORS.
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    CodeUri: backend/
+    MemorySize: 256
+    Timeout: 15
+    Tracing: Active
+    Environment:
+      Variables:
+        ORDERS_TABLE_NAME: !Ref OrdersTable
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+    # Lambda automatically publishes logs to CloudWatch. X-Ray tracing links HTTP requests to each step.
+
+Resources:
+  DeliveryApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'content-type,authorization'"
+        AllowOrigin: !Sub "'${AllowedOrigin}'"
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      # DynamoDB on-demand is appropriate for an early delivery product: it scales with traffic and needs no capacity planning.
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: gsi1pk
+          AttributeType: S
+        - AttributeName: gsi1sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: byCreatedAt
+          KeySchema:
+            - AttributeName: gsi1pk
+              KeyType: HASH
+            - AttributeName: gsi1sk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  StartOrderFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Target: es2022
+        Format: esm
+        EntryPoints: [src/handlers/start-order.ts]
+    Properties:
+      Handler: start-order.handler
+      Environment:
+        Variables:
+          ORDER_WORKFLOW_ARN: !Ref OrderWorkflow
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: states:StartSyncExecution
+              Resource: !Ref OrderWorkflow
+      Events:
+        CreateOrder:
+          Type: Api
+          Properties: { RestApiId: !Ref DeliveryApi, Path: /orders, Method: post }
+
+  HistoryFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties: { Target: es2022, Format: esm, EntryPoints: [src/handlers/history.ts] }
+    Properties:
+      Handler: history.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:Query]
+              Resource: [!GetAtt OrdersTable.Arn, !Sub "${OrdersTable.Arn}/index/byCreatedAt"]
+      Events:
+        ListOrders:
+          Type: Api
+          Properties: { RestApiId: !Ref DeliveryApi, Path: /orders, Method: get }
+        GetOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DeliveryApi
+            Path: "/orders/{id}"
+            Method: get
+
+  DashboardFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties: { Target: es2022, Format: esm, EntryPoints: [src/handlers/dashboard.ts] }
+    Properties:
+      Handler: dashboard.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:Query]
+              Resource: [!GetAtt OrdersTable.Arn, !Sub "${OrdersTable.Arn}/index/byCreatedAt"]
+      Events:
+        GetDashboard:
+          Type: Api
+          Properties: { RestApiId: !Ref DeliveryApi, Path: /dashboard, Method: get }
+
+  ParseOrderFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties: { Target: es2022, Format: esm, EntryPoints: [src/handlers/parse-order.ts] }
+    Properties:
+      Handler: parse-order.handler
+      Environment:
+        Variables: { BEDROCK_MODEL_ID: !Ref BedrockModelId }
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: !Sub "arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/${BedrockModelId}"
+
+  ValidateProductsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        { Target: es2022, Format: esm, EntryPoints: [src/handlers/validate-products.ts] }
+    Properties: { Handler: validate-products.handler }
+
+  CalculatePriceFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        { Target: es2022, Format: esm, EntryPoints: [src/handlers/calculate-price.ts] }
+    Properties: { Handler: calculate-price.handler }
+
+  SaveOrderFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties: { Target: es2022, Format: esm, EntryPoints: [src/handlers/save-order.ts] }
+    Properties:
+      Handler: save-order.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: dynamodb:PutItem
+              Resource: !GetAtt OrdersTable.Arn
+
+  ConfirmOrderFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties: { Target: es2022, Format: esm, EntryPoints: [src/handlers/confirm-order.ts] }
+    Properties: { Handler: confirm-order.handler }
+
+  OrderWorkflow:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: EXPRESS
+      # Express is selected because the chat needs a synchronous response. Standard is preferable for long-running delivery fulfillment.
+      DefinitionUri: backend/statemachine/order-workflow.asl.json
+      DefinitionSubstitutions:
+        ParseOrderFunctionArn: !GetAtt ParseOrderFunction.Arn
+        ValidateProductsFunctionArn: !GetAtt ValidateProductsFunction.Arn
+        CalculatePriceFunctionArn: !GetAtt CalculatePriceFunction.Arn
+        SaveOrderFunctionArn: !GetAtt SaveOrderFunction.Arn
+        ConfirmOrderFunctionArn: !GetAtt ConfirmOrderFunction.Arn
+      Policies:
+        - LambdaInvokePolicy: { FunctionName: !Ref ParseOrderFunction }
+        - LambdaInvokePolicy: { FunctionName: !Ref ValidateProductsFunction }
+        - LambdaInvokePolicy: { FunctionName: !Ref CalculatePriceFunction }
+        - LambdaInvokePolicy: { FunctionName: !Ref SaveOrderFunction }
+        - LambdaInvokePolicy: { FunctionName: !Ref ConfirmOrderFunction }
+
+Outputs:
+  ApiUrl:
+    Description: Configure this value as VITE_API_BASE_URL in the front-end deployment.
+    Value: !Sub "https://${DeliveryApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  OrdersTableName:
+    Value: !Ref OrdersTable
+  OrderWorkflowArn:
+    Value: !Ref OrderWorkflow

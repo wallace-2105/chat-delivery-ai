@@ -9,6 +9,10 @@ const config: Record<OrderStatus, { label: string; className: string }> = {
     className: "bg-primary/12 text-primary border-primary/30",
   },
   entregue: { label: "Entregue", className: "bg-success/12 text-success border-success/30" },
+  cancelado: {
+    label: "Cancelado",
+    className: "bg-destructive/12 text-destructive border-destructive/30",
+  },
 };
 
 export const statusOptions = (Object.keys(config) as OrderStatus[]).map((value) => ({

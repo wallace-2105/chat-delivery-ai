@@ -1,5 +1,16 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bot, LayoutDashboard, Menu, MessageSquare, Moon, ReceiptText, Sun } from "lucide-react";
+import {
+  Bot,
+  CircleHelp,
+  House,
+  LayoutDashboard,
+  Menu,
+  MessageSquare,
+  Moon,
+  Network,
+  ReceiptText,
+  Sun,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -8,9 +19,12 @@ import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 
 export const navItems = [
+  { title: "Home", url: "/", icon: House },
   { title: "Assistente", url: "/assistente", icon: MessageSquare },
-  { title: "Histórico", url: "/historico", icon: ReceiptText },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Meus Pedidos", url: "/historico", icon: ReceiptText },
+  { title: "Arquitetura AWS", url: "/arquitetura", icon: Network },
+  { title: "Sobre", url: "/sobre", icon: CircleHelp },
 ] as const;
 
 export function Navbar() {

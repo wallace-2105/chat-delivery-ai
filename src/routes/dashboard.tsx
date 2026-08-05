@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Clock, DollarSign, ShoppingBag } from "lucide-react";
+import { Ban, CheckCircle2, Clock, DollarSign, ReceiptText, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Area,
@@ -61,11 +61,11 @@ function DashboardPage() {
         <header className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
-            Visão geral da operação com dados fictícios.
+            Visão geral da operação, receita e andamento dos pedidos.
           </p>
         </header>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <StatCard
             label="Pedidos hoje"
             value={String(data?.metrics.ordersToday ?? 0)}
@@ -76,7 +76,7 @@ function DashboardPage() {
           <StatCard
             label="Receita"
             value={formatCurrency(data?.metrics.revenue ?? 0)}
-            hint="Ticket médio R$ 73,69"
+            hint="Faturamento dos pedidos de hoje"
             icon={DollarSign}
             tone="success"
             loading={isLoading}
@@ -95,6 +95,21 @@ function DashboardPage() {
             hint="Taxa de entrega 98,4%"
             icon={CheckCircle2}
             tone="info"
+            loading={isLoading}
+          />
+          <StatCard
+            label="Ticket médio"
+            value={formatCurrency(data?.metrics.averageTicket ?? 0)}
+            hint="Média por pedido confirmado"
+            icon={ReceiptText}
+            loading={isLoading}
+          />
+          <StatCard
+            label="Pedidos cancelados"
+            value={String(data?.metrics.cancelled ?? 0)}
+            hint="Cancelamentos no período"
+            icon={Ban}
+            tone="warning"
             loading={isLoading}
           />
         </div>

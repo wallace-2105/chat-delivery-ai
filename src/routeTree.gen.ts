@@ -10,13 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ArquiteturaRouteImport } from './routes/arquitetura'
 import { Route as AssistenteRouteImport } from './routes/assistente'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as HistoricoRouteImport } from './routes/historico'
+import { Route as SobreRouteImport } from './routes/sobre'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArquiteturaRoute = ArquiteturaRouteImport.update({
+  id: '/arquitetura',
+  path: '/arquitetura',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssistenteRoute = AssistenteRouteImport.update({
@@ -34,39 +41,71 @@ const HistoricoRoute = HistoricoRouteImport.update({
   path: '/historico',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/arquitetura': typeof ArquiteturaRoute
   '/assistente': typeof AssistenteRoute
   '/dashboard': typeof DashboardRoute
   '/historico': typeof HistoricoRoute
+  '/sobre': typeof SobreRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/arquitetura': typeof ArquiteturaRoute
   '/assistente': typeof AssistenteRoute
   '/dashboard': typeof DashboardRoute
   '/historico': typeof HistoricoRoute
+  '/sobre': typeof SobreRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/arquitetura': typeof ArquiteturaRoute
   '/assistente': typeof AssistenteRoute
   '/dashboard': typeof DashboardRoute
   '/historico': typeof HistoricoRoute
+  '/sobre': typeof SobreRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/assistente' | '/dashboard' | '/historico'
+  fullPaths:
+    | '/'
+    | '/arquitetura'
+    | '/assistente'
+    | '/dashboard'
+    | '/historico'
+    | '/sobre'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistente' | '/dashboard' | '/historico'
-  id: '__root__' | '/' | '/assistente' | '/dashboard' | '/historico'
+  to:
+    | '/'
+    | '/arquitetura'
+    | '/assistente'
+    | '/dashboard'
+    | '/historico'
+    | '/sobre'
+  id:
+    | '__root__'
+    | '/'
+    | '/arquitetura'
+    | '/assistente'
+    | '/dashboard'
+    | '/historico'
+    | '/sobre'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ArquiteturaRoute: typeof ArquiteturaRoute
   AssistenteRoute: typeof AssistenteRoute
   DashboardRoute: typeof DashboardRoute
   HistoricoRoute: typeof HistoricoRoute
+  SobreRoute: typeof SobreRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -76,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/arquitetura': {
+      id: '/arquitetura'
+      path: '/arquitetura'
+      fullPath: '/arquitetura'
+      preLoaderRoute: typeof ArquiteturaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/assistente': {
@@ -99,14 +145,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoricoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ArquiteturaRoute: ArquiteturaRoute,
   AssistenteRoute: AssistenteRoute,
   DashboardRoute: DashboardRoute,
   HistoricoRoute: HistoricoRoute,
+  SobreRoute: SobreRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

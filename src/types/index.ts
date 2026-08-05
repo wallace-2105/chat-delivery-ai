@@ -1,4 +1,5 @@
-export type OrderStatus = "recebido" | "preparando" | "saiu_para_entrega" | "entregue";
+export type OrderStatus =
+  "recebido" | "preparando" | "saiu_para_entrega" | "entregue" | "cancelado";
 
 export interface OrderItem {
   id: string;
@@ -42,6 +43,8 @@ export interface DashboardMetrics {
   revenue: number;
   pending: number;
   completed: number;
+  cancelled: number;
+  averageTicket: number;
 }
 
 export interface RevenuePoint {
@@ -53,4 +56,12 @@ export interface RevenuePoint {
 export interface DashboardData {
   metrics: DashboardMetrics;
   chart: RevenuePoint[];
+}
+
+export type OrderProcessingStep =
+  "received" | "interpreting" | "validating" | "pricing" | "saving" | "confirmed";
+
+export interface ProcessingState {
+  step: OrderProcessingStep;
+  state: "pending" | "running" | "completed" | "error";
 }

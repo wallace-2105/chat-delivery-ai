@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ReceiptText, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/EmptyState";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -52,9 +53,12 @@ function HistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("todos");
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
 
-  useEffect(() => {
+  const loadOrders = useCallback(() => {
     let active = true;
+    setIsLoading(true);
     getHistory()
       .then((data) => active && setOrders(data))
       .catch(() => toast.error("Não foi possível carregar o histórico."))
@@ -63,6 +67,8 @@ function HistoryPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => loadOrders(), [loadOrders]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -76,6 +82,11 @@ function HistoryPage() {
     });
   }, [orders, search, status]);
 
+  useEffect(() => setPage(1), [search, status]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageOrders = filtered.slice((page - 1) * pageSize, page * pageSize);
+
   const resetFilters = () => {
     setSearch("");
     setStatus("todos");
@@ -86,9 +97,9 @@ function HistoryPage() {
       <AppSidebar />
       <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:py-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Histórico</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Meus Pedidos</h1>
           <p className="text-sm text-muted-foreground">
-            Pedidos simulados com status de preparo e entrega.
+            Consulte pedidos, acompanhe o preparo e filtre por status.
           </p>
         </header>
 
@@ -146,7 +157,7 @@ function HistoryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((order) => (
+                  {pageOrders.map((order) => (
                     <TableRow key={order.id} className="transition-colors hover:bg-muted/60">
                       <TableCell className="font-medium">{order.id}</TableCell>
                       <TableCell>{order.customer}</TableCell>
@@ -169,11 +180,39 @@ function HistoryPage() {
             </div>
 
             <div className="grid gap-3 md:hidden">
-              {filtered.map((order) => (
+              {pageOrders.map((order) => (
                 <OrderCard key={order.id} order={order} />
               ))}
             </div>
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Página {page} de {totalPages} · {filtered.length} pedido(s)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((current) => current - 1)}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Próxima
+                </Button>
+              </div>
+            </div>
           </>
+        )}
+        {!isLoading && orders.length === 0 && (
+          <Button variant="outline" className="mt-4" onClick={loadOrders}>
+            Tentar novamente
+          </Button>
         )}
       </div>
     </div>

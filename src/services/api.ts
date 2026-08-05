@@ -1,13 +1,12 @@
 /**
  * Camada de serviço (mock).
  *
- * Nenhuma chamada HTTP real é feita aqui. Cada função devolve uma Promise com
- * dados mockados e a mesma assinatura que a futura API REST terá
- * (AWS API Gateway + Lambda + Step Functions + Bedrock + DynamoDB).
+ * `VITE_API_BASE_URL` aponta para o stage do API Gateway depois do deploy.
+ * Sem essa variável, o modo demonstração mantém dados mockados para que a UI
+ * continue navegável sem credenciais AWS.
  *
- * Exemplo de substituição futura:
- *   const res = await fetch(`${API_BASE_URL}/orders`, { method: "POST", body });
- *   return res.json();
+ * API Gateway foi escolhido como borda HTTP porque entrega autenticação, CORS e
+ * escalabilidade gerenciada sem manter um servidor de aplicação.
  */
 import type { ChatMessage, DashboardData, Order, OrderSummary, SendOrderResponse } from "@/types";
 import {
@@ -19,7 +18,8 @@ import {
   mockOrders,
 } from "./mock-data";
 
-export const API_BASE_URL = "/api";
+export const API_BASE_URL = import.meta.env["VITE_API_BASE_URL"]?.replace(/\/$/, "") ?? "";
+const hasApi = Boolean(API_BASE_URL);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -44,6 +44,12 @@ export async function sendOrder(
   prompt: string,
   currentSummary: OrderSummary,
 ): Promise<SendOrderResponse> {
+  if (hasApi) {
+    return request<SendOrderResponse>("/orders", {
+      method: "POST",
+      body: JSON.stringify({ prompt, currentSummary }),
+    });
+  }
   await delay(1200);
 
   const reply = assistantReplies[Math.floor(Math.random() * assistantReplies.length)];
@@ -66,6 +72,12 @@ export async function sendOrder(
 
 /** POST /orders/confirm — confirma o pedido montado pelo assistente. */
 export async function confirmOrder(summary: OrderSummary): Promise<{ orderId: string }> {
+  if (hasApi) {
+    return request<{ orderId: string }>("/orders", {
+      method: "POST",
+      body: JSON.stringify({ action: "confirm", summary }),
+    });
+  }
   await delay(1000);
   if (summary.items.length === 0) {
     throw new Error("Não é possível confirmar um pedido vazio.");
@@ -75,12 +87,26 @@ export async function confirmOrder(summary: OrderSummary): Promise<{ orderId: st
 
 /** GET /orders — histórico de pedidos. */
 export async function getHistory(): Promise<Order[]> {
+  if (hasApi) return request<Order[]>("/orders");
   await delay(700);
   return mockOrders;
 }
 
 /** GET /dashboard — métricas e série temporal. */
 export async function getDashboard(): Promise<DashboardData> {
+  if (hasApi) return request<DashboardData>("/dashboard");
   await delay(700);
   return mockDashboard;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: { "content-type": "application/json", ...init?.headers },
+  });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { message?: string } | null;
+    throw new Error(body?.message ?? "Não foi possível concluir a solicitação.");
+  }
+  return response.json() as Promise<T>;
 }

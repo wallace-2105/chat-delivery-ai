@@ -1,0 +1,77 @@
+{
+  "Comment": "Delivery AI order workflow. Step Functions was chosen to make each business transition visible, retryable and auditable.",
+  "StartAt": "InterpretOrder",
+  "States": {
+    "InterpretOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${ParseOrderFunctionArn}", "Payload.$": "$" },
+      "OutputPath": "$.Payload",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.TooManyRequestsException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": "$.error", "Next": "ReturnError" }],
+      "Next": "ValidateProducts"
+    },
+    "ValidateProducts": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${ValidateProductsFunctionArn}", "Payload.$": "$" },
+      "OutputPath": "$.Payload",
+      "Next": "ProductExists"
+    },
+    "ProductExists": {
+      "Type": "Choice",
+      "Choices": [
+        { "Variable": "$.invalidItems[0]", "IsPresent": true, "Next": "ReturnInvalidProduct" }
+      ],
+      "Default": "CalculatePrice"
+    },
+    "CalculatePrice": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${CalculatePriceFunctionArn}", "Payload.$": "$" },
+      "OutputPath": "$.Payload",
+      "Next": "IsConfirmation"
+    },
+    "IsConfirmation": {
+      "Type": "Choice",
+      "Choices": [{ "Variable": "$.action", "StringEquals": "confirm", "Next": "SaveOrder" }],
+      "Default": "ReturnPreview"
+    },
+    "SaveOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${SaveOrderFunctionArn}", "Payload.$": "$" },
+      "OutputPath": "$.Payload",
+      "Next": "ConfirmOrder"
+    },
+    "ConfirmOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${ConfirmOrderFunctionArn}", "Payload.$": "$" },
+      "OutputPath": "$.Payload",
+      "End": true
+    },
+    "ReturnPreview": {
+      "Type": "Pass",
+      "Parameters": { "message.$": "$.message", "summary.$": "$.summary" },
+      "End": true
+    },
+    "ReturnInvalidProduct": {
+      "Type": "Fail",
+      "Error": "UnknownProduct",
+      "Cause": "Um ou mais produtos não constam no catálogo."
+    },
+    "ReturnError": {
+      "Type": "Fail",
+      "Error": "OrderInterpretationFailed",
+      "Cause": "Não foi possível interpretar o pedido."
+    }
+  }
+}

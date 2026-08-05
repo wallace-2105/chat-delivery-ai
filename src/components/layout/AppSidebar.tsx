@@ -9,7 +9,7 @@ export function AppSidebar() {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border/70 bg-sidebar p-4 lg:block">
       <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        Operação
+        Navegação
       </p>
       <nav className="flex flex-col gap-1">
         {navItems.map((item) => (
@@ -28,8 +28,7 @@ export function AppSidebar() {
         ))}
       </nav>
       <div className="mt-6 rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
-        Interface mockada, pronta para integração com AWS Step Functions, Bedrock, Lambda e
-        DynamoDB.
+        Amazon Bedrock interpreta o pedido; Step Functions orquestra as etapas com rastreabilidade.
       </div>
     </aside>
   );

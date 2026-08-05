@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { OrderSummaryCard } from "@/components/OrderSummaryCard";
+import { OrderProcessingTimeline } from "@/components/OrderProcessingTimeline";
 import { useAssistant } from "@/hooks/use-assistant";
 
 export const Route = createFileRoute("/assistente")({
@@ -25,7 +26,8 @@ export const Route = createFileRoute("/assistente")({
 });
 
 function AssistantPage() {
-  const { messages, summary, isLoading, isTyping, isConfirming, send, confirm } = useAssistant();
+  const { messages, summary, isLoading, isTyping, isConfirming, processing, send, confirm } =
+    useAssistant();
 
   return (
     <div className="flex">
@@ -39,12 +41,18 @@ function AssistantPage() {
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <ChatPanel
-            messages={messages}
-            isLoading={isLoading}
-            isTyping={isTyping}
-            onSend={send}
-          />
+          <div className="space-y-4">
+            <ChatPanel
+              messages={messages}
+              isLoading={isLoading}
+              isTyping={isTyping}
+              onSend={send}
+            />
+            <OrderProcessingTimeline
+              steps={processing}
+              visible={isTyping || processing.some((item) => item.state === "completed")}
+            />
+          </div>
           <OrderSummaryCard
             summary={summary}
             isLoading={isLoading}

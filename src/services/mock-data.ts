@@ -119,6 +119,8 @@ export const mockDashboard: DashboardData = {
     revenue: 9432.75,
     pending: 14,
     completed: 106,
+    cancelled: 8,
+    averageTicket: 73.69,
   },
   chart: [
     { label: "Seg", orders: 82, revenue: 5120 },
