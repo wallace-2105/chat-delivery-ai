@@ -101,12 +101,30 @@ async function runWorkflow(input: WorkflowInput) {
   // 3. CalculatePrice
   const summary = buildSummary(items);
   const createdAt = new Date().toISOString();
+
+  // Montar uma resposta mais natural e variada
+  const itemList = items.map((i) => `${i.quantity}× ${i.name}`).join(", ");
+  const endings = [
+    "Deseja adicionar mais alguma coisa?",
+    "Quer incluir uma sobremesa ou bebida?",
+    "Posso adicionar mais algum item?",
+    "Ficou alguma coisa faltando?",
+  ];
+  const ending = endings[Math.floor(Math.random() * endings.length)];
+  const openingOptions = [
+    `Ótima escolha! Adicionei ${itemList} ao seu carrinho. ${ending}`,
+    `Perfeito! Aqui está o resumo: ${itemList}. ${ending}`,
+    `Anotado! Atualizei seu pedido com ${itemList}. ${ending}`,
+  ];
+  const content = openingOptions[Math.floor(Math.random() * openingOptions.length)];
+
   const message = {
     id: `m-${Date.now()}`,
     role: "assistant" as const,
-    content: `Entendi. Atualizei seu pedido com ${items.map((i) => `${i.quantity}× ${i.name}`).join(", ")}. Deseja confirmar?`,
+    content,
     createdAt,
   };
+
 
   // IsConfirmation?
   if (input.action !== "confirm") {

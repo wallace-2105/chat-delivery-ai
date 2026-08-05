@@ -1,36 +1,12 @@
 import type { ChatMessage, DashboardData, Order, OrderSummary } from "@/types";
 
-export const initialMessages: ChatMessage[] = [
-  {
-    id: "m1",
-    role: "assistant",
-    content:
-      "Olá! Sou o Delivery AI Assistant. Diga o que você quer comer e eu monto o pedido para você.",
-    createdAt: "2026-08-05T13:40:00.000Z",
-  },
-  {
-    id: "m2",
-    role: "user",
-    content: "Quero uma pizza de calabresa e uma Coca-Cola.",
-    createdAt: "2026-08-05T13:40:30.000Z",
-  },
-  {
-    id: "m3",
-    role: "assistant",
-    content:
-      "Perfeito! Adicionei 1 Pizza de Calabresa (grande) e 1 Coca-Cola 2L ao seu pedido. Quer incluir uma sobremesa?",
-    createdAt: "2026-08-05T13:40:38.000Z",
-  },
-];
+export const initialMessages: ChatMessage[] = [];
 
 export const initialSummary: OrderSummary = {
-  items: [
-    { id: "i1", name: "Pizza de Calabresa (G)", quantity: 1, unitPrice: 54.9 },
-    { id: "i2", name: "Coca-Cola 2L", quantity: 1, unitPrice: 12.5 },
-  ],
-  subtotal: 67.4,
+  items: [],
+  subtotal: 0,
   deliveryFee: 7.9,
-  total: 75.3,
+  total: 0,
 };
 
 export const assistantReplies: string[] = [
