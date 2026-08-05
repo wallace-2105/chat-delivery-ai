@@ -88,7 +88,131 @@ VITE_API_BASE_URL=https://SEU_API_ID.execute-api.SUA_REGIAO.amazonaws.com/prod
 
 Reinicie o Vite depois de alterar a variável. Não coloque credenciais AWS no front-end.
 
-## Configurar e fazer deploy AWS
+---
+
+## Executando Localmente
+
+O backend roda localmente como um servidor Express que emula o API Gateway, o Step Functions e o DynamoDB — **sem precisar de Docker, AWS CLI ou conta AWS**.
+
+### Pré-requisitos
+
+- Node.js 18+ (recomendado: 20+)
+- npm 9+
+
+### 1. Instalar dependências do backend
+
+```bash
+cd backend
+npm install
+```
+
+### 2. Iniciar o backend
+
+```bash
+# Modo desenvolvimento (reinicia automaticamente ao salvar arquivos)
+npm run dev
+
+# Ou modo simples
+npm start
+```
+
+O servidor sobe em **`http://localhost:3001`** e exibe:
+
+```
+╔══════════════════════════════════════════════════╗
+║  🚀  Delivery AI — servidor local iniciado       ║
+╠══════════════════════════════════════════════════╣
+║  API:      http://localhost:3001                ║
+║  CORS:     http://localhost:8080                 ║
+║  Bedrock:  fallback (aliases)                    ║
+╚══════════════════════════════════════════════════╝
+```
+
+O servidor vem pré-carregado com 4 pedidos de demonstração.
+
+### 3. Conectar o frontend ao backend local
+
+Na raiz do projeto, crie o arquivo `.env.local`:
+
+```env
+VITE_API_BASE_URL=http://localhost:3001
+```
+
+### 4. Iniciar o frontend
+
+Abra um novo terminal (mantendo o backend rodando):
+
+```bash
+# Na raiz do projeto
+npm install      # ou: bun install
+npm run dev      # ou: bun run dev
+```
+
+Acesse **`http://localhost:8080`**.
+
+### 5. Testar a API diretamente
+
+```bash
+# Status do servidor
+curl http://localhost:3001/health
+
+# Pedir uma prévia de pedido (interpreta linguagem natural)
+curl -X POST http://localhost:3001/orders \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "quero 1 pizza calabresa e 2 cocas"}'
+
+# Confirmar um pedido (use o summary retornado acima)
+curl -X POST http://localhost:3001/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "confirm",
+    "summary": {
+      "items": [{"id":"pizza-calabresa-g","name":"Pizza de Calabresa (G)","quantity":1,"unitPrice":54.9}],
+      "subtotal": 54.9,
+      "deliveryFee": 7.9,
+      "total": 62.8
+    },
+    "customer": "João"
+  }'
+
+# Listar histórico de pedidos
+curl http://localhost:3001/orders
+
+# Buscar pedido por ID
+curl http://localhost:3001/orders/DA-local-001
+
+# Métricas do dashboard
+curl http://localhost:3001/dashboard
+```
+
+### Interpretação de pedidos sem IA (modo padrão)
+
+Sem configurar credenciais AWS, o servidor usa um **parser local por aliases do catálogo**. Ele reconhece:
+
+| Produto | Exemplos de frases aceitas |
+|---|---|
+| Pizza de Calabresa (G) | "pizza calabresa", "calabresa" |
+| Pizza Marguerita (G) | "pizza marguerita", "marguerita" |
+| Coca-Cola 2L | "coca cola", "coca", "refrigerante" |
+| Brownie com sorvete | "brownie" |
+| Batata rústica | "batata" |
+
+### Usar Amazon Bedrock (IA real) localmente
+
+Se você tiver credenciais AWS com acesso ao Bedrock, crie `backend/.env.local`:
+
+```env
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=sua_access_key
+AWS_SECRET_ACCESS_KEY=sua_secret_key
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+```
+
+Reinicie o servidor. A IA interpretará qualquer mensagem em linguagem natural.
+
+---
+
+
 
 Pré-requisitos: AWS CLI autenticada, [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html), Node.js 20 e acesso ao modelo do Bedrock na região escolhida.
 
