@@ -1,29 +1,105 @@
-# Welcome to your Lovable project
+# Delivery AI Assistant
 
-This project was built with [Lovable](https://lovable.dev).
+Interface (front-end apenas) de um assistente inteligente para pedidos de delivery.
+**Slogan:** _Seu assistente inteligente para pedidos de delivery._
 
-## Build with Lovable
+> ⚠️ Este repositório contém **somente a camada de apresentação**. Não há backend, banco de dados
+> nem chamadas HTTP reais — todos os dados são mockados na camada de serviço (`src/services/api.ts`),
+> pronta para ser substituída por uma API REST em AWS (API Gateway + Lambda + Step Functions +
+> Amazon Bedrock + DynamoDB).
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+## Tecnologias
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- React 19 + TypeScript
+- Vite
+- TanStack Router (roteamento file-based — este template não usa React Router)
+- Tailwind CSS v4
+- shadcn/ui
+- Lucide Icons
+- React Hook Form
+- Recharts (gráficos)
+- Sonner (toasts)
 
-## Development
+## Identidade visual
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+| Token       | Valor     |
+| ----------- | --------- |
+| Primária    | `#FF5A1F` |
+| Secundária  | `#111827` |
+| Neutras     | Branco / cinza claro / cinza escuro |
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+Bordas arredondadas, animações suaves, tema claro e escuro (toggle na navbar) e layout responsivo
+(desktop, tablet e mobile).
+
+## Páginas
+
+| Rota          | Descrição |
+| ------------- | --------- |
+| `/`           | Home com hero, descrição, botão **Começar** e cards de funcionalidades |
+| `/assistente` | Chat estilo ChatGPT + card lateral de **Resumo do Pedido** |
+| `/historico`  | Tabela de pedidos simulados com filtros e busca |
+| `/dashboard`  | Cards de métricas e gráfico com dados fictícios |
+
+## Como executar
+
+```bash
+bun install     # ou npm install
+bun run dev     # ou npm run dev
 ```
 
-## Built with
+A aplicação abre em `http://localhost:8080`.
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+Outros scripts: `bun run build`, `bun run preview`, `bun run lint`.
+
+## Estrutura do projeto
+
+```
+src/
+├─ assets/                 # imagens e mídias
+├─ components/
+│  ├─ chat/                # ChatPanel, MessageBubble, TypingIndicator
+│  ├─ layout/              # Navbar, AppSidebar, Footer
+│  ├─ ui/                  # shadcn/ui (button, card, dialog, table, skeleton, sonner...)
+│  ├─ EmptyState.tsx
+│  ├─ OrderCard.tsx
+│  ├─ OrderSummaryCard.tsx
+│  ├─ StatCard.tsx
+│  └─ StatusBadge.tsx
+├─ hooks/                  # use-assistant, use-theme, use-mobile
+├─ lib/                    # utils, formatação de moeda/data
+├─ routes/                 # páginas (index, assistente, historico, dashboard, __root)
+├─ services/               # api.ts (mock) + mock-data.ts
+├─ types/                  # tipagem de domínio (Order, ChatMessage, DashboardData...)
+└─ styles.css              # design system (tokens, tema claro/escuro, utilitários)
+```
+
+## Camada de serviço
+
+Todas as funções retornam `Promise` com dados mockados e latência simulada:
+
+```ts
+getAssistantSession(); // GET  /assistant/session
+sendOrder(prompt, summary); // POST /orders
+confirmOrder(summary); // POST /orders/confirm
+getHistory(); // GET  /orders
+getDashboard(); // GET  /dashboard
+```
+
+Para integrar com o backend, substitua o corpo de cada função por um `fetch` para `API_BASE_URL`
+mantendo as mesmas assinaturas e tipos.
+
+## Imagens (placeholders)
+
+| Tela      | Preview |
+| --------- | ------- |
+| Home      | `![Home](./docs/home.png)` |
+| Assistente| `![Assistente](./docs/assistente.png)` |
+| Histórico | `![Histórico](./docs/historico.png)` |
+| Dashboard | `![Dashboard](./docs/dashboard.png)` |
+
+## Próximos passos
+
+1. Expor endpoints REST em AWS API Gateway.
+2. Orquestrar o fluxo do pedido com Step Functions.
+3. Interpretar a mensagem do cliente com Amazon Bedrock.
+4. Persistir pedidos no DynamoDB.
