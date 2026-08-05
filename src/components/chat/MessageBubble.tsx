@@ -1,4 +1,6 @@
-import { Bot, User } from "lucide-react";
+import { User } from "lucide-react";
+
+import { RobotIcon } from "@/components/ui/robot-icon";
 
 import type { ChatMessage } from "@/types";
 import { cn } from "@/lib/utils";
@@ -19,7 +21,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           isUser ? "bg-muted text-foreground" : "bg-primary text-primary-foreground",
         )}
       >
-        {isUser ? <User className="size-4" /> : <Bot className="size-4" />}
+        {isUser ? <User className="size-4" /> : <RobotIcon className="size-4" />}
       </span>
       <div
         className={cn(
@@ -39,7 +41,7 @@ export function TypingIndicator() {
   return (
     <div className="flex animate-in items-center gap-3 fade-in duration-300">
       <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-primary text-primary-foreground">
-        <Bot className="size-4" />
+        <RobotIcon className="size-4" />
       </span>
       <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-muted px-4 py-3 text-sm text-muted-foreground">
         <span className="flex gap-1">

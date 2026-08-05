@@ -1,6 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-  Bot,
   CircleHelp,
   House,
   LayoutDashboard,
@@ -11,6 +10,8 @@ import {
   ReceiptText,
   Sun,
 } from "lucide-react";
+
+import { RobotIcon } from "@/components/ui/robot-icon";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export function Navbar() {
       <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-2.5">
           <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-glow">
-            <Bot className="size-5" />
+            <RobotIcon className="size-5" />
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm font-semibold tracking-tight">

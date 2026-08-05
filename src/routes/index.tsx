@@ -2,13 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   BarChart3,
-  Bot,
   Clock,
   MessagesSquare,
   ShieldCheck,
   Sparkle,
   Truck,
 } from "lucide-react";
+
+import { RobotIcon } from "@/components/ui/robot-icon";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,7 +76,7 @@ function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-28">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
-              <Bot className="size-3.5 text-primary" />
+              <RobotIcon className="size-3.5 text-primary" />
               Assistente de delivery com IA
             </span>
             <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
