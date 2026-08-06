@@ -10,8 +10,6 @@
  */
 import type { ChatMessage, DashboardData, Order, OrderSummary, SendOrderResponse } from "@/types";
 import {
-  assistantReplies,
-  extraItems,
   initialMessages,
   initialSummary,
   mockDashboard,
@@ -52,21 +50,21 @@ export async function sendOrder(
   }
   await delay(1200);
 
-  const reply = assistantReplies[Math.floor(Math.random() * assistantReplies.length)];
-  const nextItem = extraItems.find(
-    (item) => !currentSummary.items.some((current) => current.id === item.id),
-  );
-
-  const items = nextItem ? [...currentSummary.items, { ...nextItem }] : currentSummary.items;
-
+  // Modo demonstração sem backend: responde sem adicionar itens aleatórios.
+  // Para processar pedidos reais, configure VITE_API_BASE_URL=http://localhost:3001
+  // e inicie o backend com: cd backend && npm run dev
+  const demoReplies = [
+    "Olá! Estou em modo demonstração. Para processar pedidos reais, inicie o backend (cd backend && npm run dev) e configure VITE_API_BASE_URL=http://localhost:3001 no arquivo .env.local.",
+    "Modo demonstração ativo. Conecte o backend para interpretar pedidos com IA. Enquanto isso, explore a interface normalmente!",
+  ];
   return {
     message: {
       id: `m-${Date.now()}`,
       role: "assistant",
-      content: `${reply}`,
+      content: demoReplies[Math.floor(Math.random() * demoReplies.length)]!,
       createdAt: new Date().toISOString(),
     },
-    summary: buildSummary(items, currentSummary.deliveryFee),
+    summary: currentSummary, // manter o summary atual sem alterações
   };
 }
 

@@ -26,6 +26,7 @@ import type {
 } from "./domain/order.js";
 import { InMemoryOrdersRepository } from "./local/in-memory-store.js";
 import { parseFallback } from "./local/bedrock-fallback.js";
+import { handleConversation } from "./local/conversation-handler.js";
 
 // ─── Configuração ─────────────────────────────────────────────────────────
 const PORT = Number(process.env["PORT"] ?? 3001);
@@ -162,6 +163,18 @@ app.post("/orders", async (req: Request, res: Response, next: NextFunction) => {
     };
 
     const action = body.action === "confirm" ? "confirm" : "preview";
+    const emptySummary: OrderSummary = { items: [], subtotal: 0, deliveryFee: 7.9, total: 0 };
+
+    // ── Interceptar saudações, cardápio e perguntas gerais ───────────────
+    if (action === "preview" && body.prompt?.trim()) {
+      const conv = handleConversation(body.prompt.trim());
+      if (conv) {
+        // Preservar o carrinho atual — não altera a summary do cliente
+        const currentSummary = body.currentSummary ?? emptySummary;
+        res.status(200).json({ message: conv, summary: currentSummary });
+        return;
+      }
+    }
 
     if (action === "preview" && !body.prompt?.trim()) {
       res.status(400).json({ message: "Informe o pedido em texto." });
@@ -179,6 +192,43 @@ app.post("/orders", async (req: Request, res: Response, next: NextFunction) => {
       summary: body.summary,
       customer: body.customer,
     });
+
+    // ── Para confirmação, enriquecer a resposta com resumo de pagamento ──
+    if (action === "confirm" && "orderId" in result) {
+      const summary = body.summary!;
+      const itemList = summary.items
+        .map((i) => `  • ${i.quantity}× ${i.name} — R$ ${(i.unitPrice * i.quantity).toFixed(2).replace(".", ",")}`)
+        .join("\n");
+      const confirmMsg = [
+        `✅ Pedido ${result.orderId} confirmado com sucesso!`,
+        "",
+        "🧾 *Resumo do seu pedido:*",
+        itemList,
+        `  ─────────────────────────`,
+        `  Subtotal: R$ ${summary.subtotal.toFixed(2).replace(".", ",")}`,
+        `  Taxa de entrega: R$ ${summary.deliveryFee.toFixed(2).replace(".", ",")}`,
+        `  *Total a pagar: R$ ${summary.total.toFixed(2).replace(".", ",")}*`,
+        "",
+        "💳 Formas de pagamento aceitas na entrega:",
+        "  • Dinheiro (informe se precisar de troco)",
+        "  • Cartão de débito/crédito",
+        "  • Pix",
+        "",
+        "🛵 Tempo estimado: 35–50 minutos. Acompanhe em *Meus Pedidos*.",
+      ].join("\n");
+
+      res.status(200).json({
+        message: {
+          id: `conf-${Date.now()}`,
+          role: "assistant",
+          content: confirmMsg,
+          createdAt: new Date().toISOString(),
+        },
+        summary: emptySummary,   // limpa o carrinho após confirmar
+        orderId: result.orderId,
+      });
+      return;
+    }
 
     res.status(200).json(result);
   } catch (err) {

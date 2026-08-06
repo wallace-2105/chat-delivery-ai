@@ -7,15 +7,16 @@ export interface CatalogProduct extends Omit<OrderItem, "quantity"> {
 
 /** A catalog is kept in code for the demo; in production it should move to its own DynamoDB table. */
 export const catalog: CatalogProduct[] = [
-  // ── Pizzas ────────────────────────────────────────────────────────────
+
+  // ── Pizzas ─────────────────────────────────────────────────────────────
   {
     sku: "pizza-calabresa-g",
     id: "pizza-calabresa-g",
-    name: "Pizza de Calabresa (G)",
+    name: "Pizza Calabresa (G)",
     unitPrice: 54.9,
     aliases: [
-      "pizza calabresa", "calabresa", "pizza de calabresa",
-      "pizza calabresa grande", "pizza grande calabresa",
+      "calabresa", "pizza calabresa", "pizza de calabresa",
+      "pizza calabresa grande", "calabresa grande",
     ],
   },
   {
@@ -24,18 +25,18 @@ export const catalog: CatalogProduct[] = [
     name: "Pizza Marguerita (G)",
     unitPrice: 49.9,
     aliases: [
-      "pizza marguerita", "marguerita", "pizza de marguerita",
-      "pizza margherita", "margherita", "pizza vegetariana",
+      "marguerita", "margherita", "pizza marguerita", "pizza de marguerita",
+      "pizza margherita", "pizza vegetariana",
     ],
   },
   {
     sku: "pizza-frango-catupiry-g",
     id: "pizza-frango-catupiry-g",
-    name: "Pizza Frango com Catupiry (G)",
+    name: "Pizza Frango c/ Catupiry (G)",
     unitPrice: 57.9,
     aliases: [
-      "pizza frango catupiry", "frango catupiry", "pizza de frango",
-      "frango com catupiry", "pizza frango",
+      "frango catupiry", "frango com catupiry", "pizza frango catupiry",
+      "pizza de frango", "pizza frango", "frango",
     ],
   },
   {
@@ -44,11 +45,86 @@ export const catalog: CatalogProduct[] = [
     name: "Pizza Portuguesa (G)",
     unitPrice: 56.9,
     aliases: [
-      "pizza portuguesa", "portuguesa", "pizza de portuguesa",
+      "portuguesa", "pizza portuguesa", "pizza de portuguesa",
+    ],
+  },
+  {
+    sku: "pizza-quatro-queijos-g",
+    id: "pizza-quatro-queijos-g",
+    name: "Pizza Quatro Queijos (G)",
+    unitPrice: 59.9,
+    aliases: [
+      "quatro queijos", "4 queijos", "pizza quatro queijos",
+      "pizza 4 queijos", "queijos", "pizza de queijo",
+    ],
+  },
+  {
+    sku: "pizza-pepperoni-g",
+    id: "pizza-pepperoni-g",
+    name: "Pizza Pepperoni (G)",
+    unitPrice: 58.9,
+    aliases: [
+      "pepperoni", "pizza pepperoni", "pizza de pepperoni",
+    ],
+  },
+  {
+    sku: "pizza-napolitana-g",
+    id: "pizza-napolitana-g",
+    name: "Pizza Napolitana (G)",
+    unitPrice: 52.9,
+    aliases: [
+      "napolitana", "pizza napolitana", "pizza de napolitana",
+    ],
+  },
+  {
+    sku: "pizza-bacon-g",
+    id: "pizza-bacon-g",
+    name: "Pizza Bacon (G)",
+    unitPrice: 55.9,
+    aliases: [
+      "bacon", "pizza bacon", "pizza de bacon",
+    ],
+  },
+  {
+    sku: "pizza-palmito-g",
+    id: "pizza-palmito-g",
+    name: "Pizza Palmito (G)",
+    unitPrice: 53.9,
+    aliases: [
+      "palmito", "pizza palmito", "pizza de palmito",
+    ],
+  },
+  {
+    sku: "pizza-atum-g",
+    id: "pizza-atum-g",
+    name: "Pizza Atum (G)",
+    unitPrice: 54.9,
+    aliases: [
+      "atum", "pizza atum", "pizza de atum",
+    ],
+  },
+  {
+    sku: "pizza-mussarela-g",
+    id: "pizza-mussarela-g",
+    name: "Pizza Mussarela (G)",
+    unitPrice: 48.9,
+    aliases: [
+      "mussarela", "muçarela", "muzarela", "pizza mussarela",
+      "pizza de mussarela", "pizza muçarela",
+    ],
+  },
+  {
+    sku: "pizza-carne-seca-g",
+    id: "pizza-carne-seca-g",
+    name: "Pizza Carne Seca c/ Cebola (G)",
+    unitPrice: 60.9,
+    aliases: [
+      "carne seca", "carne seca com cebola", "pizza carne seca",
+      "pizza de carne seca",
     ],
   },
 
-  // ── Bebidas ──────────────────────────────────────────────────────────
+  // ── Bebidas ─────────────────────────────────────────────────────────────
   {
     sku: "coca-cola-2l",
     id: "coca-cola-2l",
@@ -56,7 +132,7 @@ export const catalog: CatalogProduct[] = [
     unitPrice: 12.5,
     aliases: [
       "coca cola", "coca", "coca-cola", "refrigerante", "soda",
-      "refri", "coca 2l", "coca cola 2l", "pepsi", "guaraná",
+      "refri", "coca 2l", "pepsi", "guaraná", "guarana",
     ],
   },
   {
@@ -80,7 +156,7 @@ export const catalog: CatalogProduct[] = [
     ],
   },
 
-  // ── Acompanhamentos ──────────────────────────────────────────────────
+  // ── Acompanhamentos ─────────────────────────────────────────────────────
   {
     sku: "batata-rustica",
     id: "batata-rustica",
@@ -88,7 +164,7 @@ export const catalog: CatalogProduct[] = [
     unitPrice: 22,
     aliases: [
       "batata", "batata rustica", "batata rústica",
-      "batata frita", "fritas", "porção de batata",
+      "batata frita", "fritas", "porção de batata", "porcao de batata",
     ],
   },
   {
@@ -101,7 +177,7 @@ export const catalog: CatalogProduct[] = [
     ],
   },
 
-  // ── Sobremesas ───────────────────────────────────────────────────────
+  // ── Sobremesas ──────────────────────────────────────────────────────────
   {
     sku: "brownie-sorvete",
     id: "brownie-sorvete",
@@ -109,7 +185,7 @@ export const catalog: CatalogProduct[] = [
     unitPrice: 18.9,
     aliases: [
       "brownie", "brownie com sorvete", "brownie sorvete",
-      "sobremesa", "sobremesas",
+      "sobremesa brownie",
     ],
   },
   {
@@ -123,3 +199,8 @@ export const catalog: CatalogProduct[] = [
     ],
   },
 ];
+
+/** Retorna apenas os sabores de pizza (excluindo meio a meio sintéticos) */
+export const pizzaFlavors = catalog.filter(
+  (p) => p.sku.startsWith("pizza-"),
+);
