@@ -46,8 +46,73 @@ function buildSummary(
   const subtotal = money(items.reduce((t, i) => t + i.unitPrice * i.quantity, 0));
   return { items, subtotal, deliveryFee, total: money(subtotal + deliveryFee) };
 }
+// ─── Helpers de carrinho ─────────────────────────────────────────────────
 
-// ─── Workflow local (substitui Step Functions) ────────────────────────────
+/** Mescla itens novos com o carrinho existente (mesmo SKU → soma quantidade) */
+function mergeCart(
+  existing: OrderSummary["items"],
+  added: Array<{ sku: string; quantity: number; name: string; unitPrice: number }>,
+): OrderSummary["items"] {
+  const cart = existing.map((i) => ({ ...i })); // cópia
+  for (const newItem of added) {
+    const found = cart.find((c) => c.id === newItem.sku);
+    if (found) {
+      found.quantity += newItem.quantity; // mesmo item → soma
+    } else {
+      cart.push({ id: newItem.sku, name: newItem.name, quantity: newItem.quantity, unitPrice: newItem.unitPrice });
+    }
+  }
+  return cart;
+}
+
+const CLEAR_CART_PATTERNS = [
+  /limpar\s+(o\s+)?carrinho/i,
+  /cancelar\s+(o\s+)?pedido/i,
+  /zerar\s+(o\s+)?carrinho/i,
+  /recomeç[ao]r|começ[ao]r\s+de\s+novo|pedido\s+novo/i,
+  /apag[ao]r\s+(tudo|o\s+carrinho)/i,
+];
+
+const REMOVE_ITEM_PATTERNS = [
+  /remov[ae]r?\s+(.+)/i,
+  /tir[ao]r?\s+(.+)/i,
+  /retir[ao]r?\s+(.+)/i,
+  /n[aã]o\s+quero\s+(mais\s+)?(.+)/i,
+  /sem\s+(.+)/i,
+];
+
+function detectClearCart(text: string): boolean {
+  return CLEAR_CART_PATTERNS.some((p) => p.test(text));
+}
+
+function detectRemoveItem(
+  text: string,
+  currentSummary: OrderSummary,
+): { newSummary: OrderSummary; removedName: string } | null {
+  for (const pattern of REMOVE_ITEM_PATTERNS) {
+    const match = text.match(pattern);
+    if (!match) continue;
+    // O grupo de captura pode ser 1 ou 2 dependendo do padrão
+    const searchText = (match[2] ?? match[1] ?? "").trim().toLowerCase();
+    if (!searchText) continue;
+
+    const itemToRemove = currentSummary.items.find((item) => {
+      const product = catalog.find((c) => c.id === item.id);
+      const nameMatch = item.name.toLowerCase().includes(searchText);
+      const aliasMatch = product?.aliases.some(
+        (a) => a.toLowerCase().includes(searchText) || searchText.includes(a.toLowerCase()),
+      ) ?? false;
+      return nameMatch || aliasMatch;
+    });
+
+    if (itemToRemove) {
+      const newItems = currentSummary.items.filter((i) => i.id !== itemToRemove.id);
+      return { newSummary: buildSummary(newItems), removedName: itemToRemove.name };
+    }
+  }
+  return null;
+}
+
 
 async function runWorkflow(input: WorkflowInput) {
   // 1. InterpretOrder — resolver itens a partir do prompt ou summary
@@ -83,14 +148,14 @@ async function runWorkflow(input: WorkflowInput) {
     .filter((item) => !catalog.some((p) => p.sku === item.sku))
     .map((item) => item.sku);
 
-  const items = parsedItems.flatMap((item) => {
+  const resolvedNew = parsedItems.flatMap((item) => {
     const p = catalog.find((c) => c.sku === item.sku);
     return p
       ? [{ id: p.id, name: p.name, quantity: item.quantity, unitPrice: p.unitPrice }]
       : [];
   });
 
-  if (!items.length && !invalidItems.length) invalidItems.push("nenhum produto reconhecido");
+  if (!resolvedNew.length && !invalidItems.length) invalidItems.push("nenhum produto reconhecido");
 
   // ProductExists?
   if (invalidItems.length > 0) {
@@ -99,23 +164,32 @@ async function runWorkflow(input: WorkflowInput) {
     );
   }
 
+  // ── Mesclar com carrinho existente ─────────────────────────────────────
+  const resolvedNewForMerge = resolvedNew.map((i) => ({ ...i, sku: i.id }));
+  const existingCartItems = input.action === "confirm"
+    ? resolvedNew  // na confirmação já tem tudo
+    : mergeCart(input.currentSummary?.items ?? [], resolvedNewForMerge);
+
+  const items = existingCartItems;
+
   // 3. CalculatePrice
   const summary = buildSummary(items);
   const createdAt = new Date().toISOString();
 
-  // Montar uma resposta mais natural e variada
-  const itemList = items.map((i) => `${i.quantity}× ${i.name}`).join(", ");
+  // Resposta mencionando o total acumulado do carrinho
+  const newItemList = resolvedNew.map((i) => `${i.quantity}× ${i.name}`).join(", ");
+  const totalLine = `Total do carrinho: R$ ${summary.total.toFixed(2).replace(".", ",")}`;
   const endings = [
-    "Deseja adicionar mais alguma coisa?",
-    "Quer incluir uma sobremesa ou bebida?",
-    "Posso adicionar mais algum item?",
-    "Ficou alguma coisa faltando?",
+    "Quer adicionar mais alguma coisa?",
+    "Posso incluir mais algum item?",
+    "Ficou faltando alguma coisa?",
+    "Quer uma sobremesa ou bebida?",
   ];
   const ending = endings[Math.floor(Math.random() * endings.length)];
   const openingOptions = [
-    `Ótima escolha! Adicionei ${itemList} ao seu carrinho. ${ending}`,
-    `Perfeito! Aqui está o resumo: ${itemList}. ${ending}`,
-    `Anotado! Atualizei seu pedido com ${itemList}. ${ending}`,
+    `Adicionei ${newItemList}! 🛒 ${totalLine}. ${ending}`,
+    `Anotado! ${newItemList} no carrinho. ${totalLine}. ${ending}`,
+    `Perfeito, adicionei ${newItemList}. ${totalLine}. ${ending}`,
   ];
   const content = openingOptions[Math.floor(Math.random() * openingOptions.length)];
 
@@ -165,15 +239,45 @@ app.post("/orders", async (req: Request, res: Response, next: NextFunction) => {
     const action = body.action === "confirm" ? "confirm" : "preview";
     const emptySummary: OrderSummary = { items: [], subtotal: 0, deliveryFee: 7.9, total: 0 };
 
-    // ── Interceptar saudações, cardápio e perguntas gerais ───────────────
-    if (action === "preview" && body.prompt?.trim()) {
-      const conv = handleConversation(body.prompt.trim());
-      if (conv) {
-        // Preservar o carrinho atual — não altera a summary do cliente
-        const currentSummary = body.currentSummary ?? emptySummary;
-        res.status(200).json({ message: conv, summary: currentSummary });
-        return;
-      }
+    // ── Interceptar limpeza e remoção de itens ──────────────────────────
+    const currentSummary = body.currentSummary ?? emptySummary;
+    const prompt = (body.prompt ?? "").trim();
+
+
+    if (detectClearCart(prompt)) {
+      res.status(200).json({
+        message: {
+          id: `m-${Date.now()}`, role: "assistant",
+          content: "Carrinho limpo! 🧹 Pode recomeçar o seu pedido quando quiser.",
+          createdAt: new Date().toISOString(),
+        },
+        summary: emptySummary,
+      });
+      return;
+    }
+
+    const removeResult = detectRemoveItem(prompt, currentSummary);
+    if (removeResult) {
+      const remaining = removeResult.newSummary.items.length;
+      const remainMsg = remaining > 0
+        ? `Ainda no carrinho: ${removeResult.newSummary.items.map((i) => `${i.quantity}× ${i.name}`).join(", ")}. Total: R$ ${removeResult.newSummary.total.toFixed(2).replace(".", ",")}.`
+        : "Seu carrinho está vazio agora.";
+      res.status(200).json({
+        message: {
+          id: `m-${Date.now()}`, role: "assistant",
+          content: `Removido: ${removeResult.removedName}. ✅ ${remainMsg}`,
+          createdAt: new Date().toISOString(),
+        },
+        summary: removeResult.newSummary,
+      });
+      return;
+    }
+
+    // ── Interceptar saudações, cardápio e perguntas gerais ──────────────
+    const conv = handleConversation(prompt);
+    if (conv) {
+      res.status(200).json({ message: conv, summary: currentSummary });
+      return;
     }
 
     if (action === "preview" && !body.prompt?.trim()) {
