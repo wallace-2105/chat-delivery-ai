@@ -6,13 +6,16 @@
     "dev": "tsx watch src/local-server.ts",
     "start": "tsx src/local-server.ts",
     "build": "esbuild src/handlers/*.ts --bundle --platform=node --target=node20 --outdir=dist --sourcemap",
+    "build:server": "esbuild src/local-server.ts --bundle --platform=node --target=node20 --outdir=dist --sourcemap --external:@libsql/client",
+    "start:prod": "node dist/local-server.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.900.0",
     "@aws-sdk/client-dynamodb": "^3.900.0",
     "@aws-sdk/client-sfn": "^3.900.0",
-    "@aws-sdk/lib-dynamodb": "^3.900.0"
+    "@aws-sdk/lib-dynamodb": "^3.900.0",
+    "@libsql/client": "^0.17.4"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",
@@ -26,4 +29,3 @@
     "typescript": "^5.8.3"
   }
 }
-

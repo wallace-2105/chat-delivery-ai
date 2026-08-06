@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: delivery-ai-backend
+    runtime: node
+    region: oregon          # mais próximo do Brasil com plano grátis
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build:server
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        fromService:
+          type: web
+          name: delivery-ai-backend
+          property: port
+      - key: ALLOWED_ORIGIN
+        sync: false         # você preenche no painel do Render com a URL do Vercel
+      - key: DATABASE_URL
+        sync: false         # URL do Turso
+      - key: DATABASE_AUTH_TOKEN
+        sync: false         # token do Turso

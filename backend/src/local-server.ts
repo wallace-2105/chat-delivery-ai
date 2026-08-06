@@ -24,7 +24,7 @@ import type {
   OrderSummary,
   WorkflowInput,
 } from "./domain/order.js";
-import { InMemoryOrdersRepository } from "./local/in-memory-store.js";
+import { LibSQLOrdersRepository } from "./local/sqlite-store.js";
 import { parseFallback } from "./local/bedrock-fallback.js";
 import { handleConversation } from "./local/conversation-handler.js";
 
@@ -32,9 +32,12 @@ import { handleConversation } from "./local/conversation-handler.js";
 const PORT = Number(process.env["PORT"] ?? 3001);
 const ALLOWED_ORIGIN = process.env["ALLOWED_ORIGIN"] ?? "http://localhost:8080";
 
-// ─── Repositório em memória (substitui DynamoDB) ──────────────────────────
-const repo = new InMemoryOrdersRepository();
-repo.seed();
+// ─── Repositório SQLite (substitui DynamoDB + memória RAM) ────────────────
+// Persiste dados entre reinicializacões localmente em orders.db
+// Em produção usa Turso via DATABASE_URL
+const repo = new LibSQLOrdersRepository();
+// Seed assíncrono — não bloqueia o servidor
+repo.seed().catch((e: unknown) => console.error("[db] Erro no seed:", e));
 
 // ─── Helpers de preço e resposta ──────────────────────────────────────────
 const money = (v: number) => Math.round(v * 100) / 100;

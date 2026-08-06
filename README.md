@@ -142,6 +142,74 @@ Definição completa em [`backend/statemachine/order-workflow.asl.json`](https:/
 
 ---
 
+## 🚀 Deploy Gratuito — Vercel + Render + Turso
+
+> Coloque o sistema no ar sem pagar nada.
+
+### 1. Banco de dados — Turso (SQLite na nuvem)
+
+```bash
+# Instalar CLI do Turso
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# Criar banco
+turso db create delivery-ai
+
+# Pegar a URL e o token
+turso db show delivery-ai --url
+turso db tokens create delivery-ai
+```
+
+Guarde a **URL** e o **token** — você vai precisar nas próximas etapas.
+
+---
+
+### 2. Backend — Render
+
+1. Acesse [render.com](https://render.com) e conecte seu GitHub
+2. Clique em **New → Web Service**
+3. Selecione este repositório
+4. O Render vai detectar o `render.yaml` automaticamente
+5. Na aba **Environment**, adicione:
+
+| Variável | Valor |
+|---|---|
+| `DATABASE_URL` | URL do Turso (ex.: `libsql://...`) |
+| `DATABASE_AUTH_TOKEN` | Token do Turso |
+| `ALLOWED_ORIGIN` | URL do Vercel (adicionar depois) |
+
+6. Clique em **Deploy** — aguarde o build terminar
+7. Copie a URL do seu backend (ex.: `https://delivery-ai-backend.onrender.com`)
+
+---
+
+### 3. Frontend — Vercel
+
+1. Acesse [vercel.com](https://vercel.com) e conecte seu GitHub
+2. Clique em **New Project** e importe este repositório
+3. Na aba **Environment Variables**, adicione:
+
+| Variável | Valor |
+|---|---|
+| `VITE_API_BASE_URL` | URL do Render (ex.: `https://delivery-ai-backend.onrender.com`) |
+
+4. Clique em **Deploy**
+5. Copie a URL do Vercel (ex.: `https://meu-delivery.vercel.app`)
+
+---
+
+### 4. Finalizar — atualizar CORS no Render
+
+Volte no Render e atualize a variável:
+
+| Variável | Valor |
+|---|---|
+| `ALLOWED_ORIGIN` | URL do Vercel (ex.: `https://meu-delivery.vercel.app`) |
+
+Pronto! O sistema está no ar. 🎉
+
+---
+
 ## 📄 Licença
 
 MIT — veja o arquivo de licença. Consulte a política da sua organização antes de usar chaves, dados de clientes ou modelos de IA em produção.
