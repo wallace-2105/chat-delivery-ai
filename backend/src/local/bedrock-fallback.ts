@@ -103,12 +103,14 @@ export function parseFallback(
 
   // 1. Tentar meio a meio primeiro
   const meioAMeio = detectMeioAMeio(text);
+  let textToParse = text;
+
   if (meioAMeio) {
     results.push(...meioAMeio);
+    // 2. Remover a parte "meio a meio" do texto apenas se encontrou com sucesso,
+    // para não re-parsear os sabores individualmente
+    textToParse = text.replace(/(?:pizza\s+)?meio\s+a?\s*meio\s+.+?(?:\s*,|$)/gi, " ");
   }
-
-  // 2. Remover a parte "meio a meio" do texto para não re-parsear os sabores individualmente
-  const textWithoutMeio = text.replace(/(?:pizza\s+)?meio\s+a?\s*meio\s+.+?(?:\s*,|$)/gi, " ");
 
   // 3. Ordenar produtos pelos aliases mais longos primeiro (evita match parcial)
   const sorted = [...catalog].sort(
@@ -145,7 +147,7 @@ export function parseFallback(
 
       let matched = false;
       for (const pattern of patterns) {
-        const match = textWithoutMeio.match(pattern);
+        const match = textToParse.match(pattern);
         if (match) {
           const raw = match[1];
           results.push({ sku: product.sku, quantity: parseQty(raw) });
@@ -156,7 +158,7 @@ export function parseFallback(
       }
 
       // Menção simples sem quantidade → assume 1
-      if (!matched && textWithoutMeio.includes(term)) {
+      if (!matched && textToParse.includes(term)) {
         results.push({ sku: product.sku, quantity: 1 });
         found = true;
       }
