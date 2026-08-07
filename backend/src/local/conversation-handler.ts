@@ -19,13 +19,6 @@ function msgId(): string {
   return `conv-${Date.now()}`;
 }
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour >= 6 && hour < 12) return "Bom dia";
-  if (hour >= 12 && hour < 18) return "Boa tarde";
-  return "Boa noite";
-}
-
 type ConversationResponse = {
   id: string;
   role: "assistant";
@@ -64,39 +57,47 @@ function isHelpRequest(text: string): boolean {
 // ─── Montar o cardápio em texto ───────────────────────────────────────────
 
 function buildMenuText(): string {
-  const pizzas = catalog.filter((p) => p.sku.startsWith("pizza-") && !p.sku.includes("meio-a-meio"));
-  const drinks = catalog.filter((p) =>
-    ["coca-cola-2l", "suco-laranja-500ml", "agua-mineral-500ml"].includes(p.sku),
+  // Separar categorias conforme especificado
+  const pizzasTradicionais = catalog.filter((p) => 
+    p.sku.startsWith("pizza-") && !["camarao-especial", "costela-barbecue", "parma-rucula", "burrata-premium"].some(sku => p.sku.includes(sku)) && !p.sku.includes("meio-")
   );
+  
+  const pizzasEspeciais = catalog.filter((p) => 
+    ["camarao-especial", "costela-barbecue", "parma-rucula", "burrata-premium"].some(sku => p.sku.includes(sku))
+  );
+
   const sides = catalog.filter((p) =>
-    ["batata-rustica", "porcao-nuggets"].includes(p.sku),
+    ["batata", "onion", "nuggets"].some(sku => p.sku.includes(sku))
   );
+
+  const drinks = catalog.filter((p) =>
+    ["coca", "guarana", "fanta", "sprite", "agua"].some(sku => p.sku.includes(sku))
+  );
+
   const desserts = catalog.filter((p) =>
-    ["brownie-sorvete", "petit-gateau"].includes(p.sku),
+    ["brownie", "petit", "pudim", "mousse"].some(sku => p.sku.includes(sku))
   );
 
   const fmt = (p: (typeof catalog)[0]) =>
-    `  • ${p.name} — R$ ${p.unitPrice.toFixed(2).replace(".", ",")}`;
+    `• ${p.name} — R$ ${p.unitPrice.toFixed(2).replace(".", ",")}`;
 
   const lines: string[] = [
-    "🍕 *Pizzas* (tamanho grande, serve 2–3 pessoas):",
-    ...pizzas.map(fmt),
+    "🍕 **Pizzas Tradicionais**",
+    ...pizzasTradicionais.map(fmt),
     "",
-    "📍 *Meio a meio disponível!* Peça dois sabores numa pizza.",
-    "  Ex.: \"pizza meio a meio calabresa e marguerita\"",
+    "🍕 **Pizzas Especiais**",
+    ...pizzasEspeciais.map(fmt),
     "",
-    "🥤 *Bebidas:*",
-    ...drinks.map(fmt),
-    "",
-    "🍟 *Acompanhamentos:*",
+    "🥔 **Acompanhamentos**",
     ...sides.map(fmt),
     "",
-    "🍫 *Sobremesas:*",
+    "🥤 **Bebidas**",
+    ...drinks.map(fmt),
+    "",
+    "🍰 **Sobremesas**",
     ...desserts.map(fmt),
     "",
-    "🛵 *Taxa de entrega:* R$ 7,90",
-    "",
-    "Para pedir, é só me dizer! Ex.: \"quero 2 pizzas de calabresa e 2 cocas\"",
+    "Me diga o que você deseja para montarmos o seu pedido! 😊",
   ];
 
   return lines.join("\n");
@@ -104,23 +105,24 @@ function buildMenuText(): string {
 
 // ─── Resposta de saudação ────────────────────────────────────────────────
 
-function greetingResponse(): ConversationResponse {
-  const saudacao = getGreeting();
+function greetingResponse(text: string): ConversationResponse {
+  const normalized = text.toLowerCase();
+  
+  let saudacao = "Olá";
+  let content = "Olá! Seja bem-vindo ao Delivery AI. Me diga o que você procura e eu preparo seu pedido.";
+  
+  if (normalized.includes("bom dia")) {
+    content = "Bom dia! 😊 Seja muito bem-vindo ao Delivery AI. Como posso ajudar hoje? Posso mostrar nosso cardápio ou montar seu pedido.";
+  } else if (normalized.includes("boa tarde")) {
+    content = "Boa tarde! 😊 Seja muito bem-vindo ao Delivery AI. Como posso ajudar hoje? Posso mostrar nosso cardápio ou montar seu pedido.";
+  } else if (normalized.includes("boa noite")) {
+    content = "Boa noite! 🍕 Que bom ter você por aqui. Está com vontade de pizza, bebidas ou acompanhamentos?";
+  }
+  
   return {
     id: msgId(),
     role: "assistant",
-    content: [
-      `${saudacao}! 👋 Bem-vindo à **Pizzaria Delivery AI**!`,
-      "",
-      "Sou seu assistente virtual e estou aqui para montar seu pedido rapidinho. 🍕",
-      "",
-      "Você pode:",
-      "  • Me dizer o que quer comer diretamente",
-      "  • Pedir o **cardápio** para ver os sabores disponíveis",
-      "  • Fazer pedidos em linguagem natural — eu entendo tudo!",
-      "",
-      "O que você vai querer hoje?",
-    ].join("\n"),
+    content,
     createdAt: now(),
   };
 }
@@ -131,11 +133,7 @@ function menuResponse(): ConversationResponse {
   return {
     id: msgId(),
     role: "assistant",
-    content: [
-      "Claro! Aqui está nosso cardápio completo 📋",
-      "",
-      buildMenuText(),
-    ].join("\n"),
+    content: buildMenuText(),
     createdAt: now(),
   };
 }
@@ -147,16 +145,14 @@ function helpResponse(): ConversationResponse {
     id: msgId(),
     role: "assistant",
     content: [
-      "Funciona assim: você me diz o que quer comer em palavras normais e eu monto o resumo do pedido! 😊",
+      "Eu sou o Delivery AI, seu atendente virtual! 😊",
       "",
-      "Exemplos do que você pode pedir:",
-      "  • \"Quero 2 pizzas de calabresa e 2 cocas\"",
-      "  • \"1 pizza meio a meio frango catupiry e calabresa\"",
-      "  • \"1 batata rústica e 1 brownie\"",
+      "Você pode pedir do seu jeito. Por exemplo:",
+      "• \"Quero 2 pizzas de calabresa e uma coca de 2 litros\"",
+      "• \"Me vê 1 batata rústica e 1 pudim\"",
+      "• \"Uma pizza meio a meio quatro queijos e peperoni\"",
       "",
-      "Depois que eu montar o resumo, você confirma e o pedido é registrado.",
-      "",
-      "Quer ver o **cardápio** ou já sabe o que quer? 😄",
+      "Quer ver o **cardápio** para escolher ou já sabe o que vai pedir?",
     ].join("\n"),
     createdAt: now(),
   };
@@ -172,9 +168,10 @@ function helpResponse(): ConversationResponse {
 export function handleConversation(text: string): ConversationResponse {
   const normalized = text.trim().toLowerCase();
 
-  if (isGreeting(normalized)) return greetingResponse();
+  // Ordem de prioridade
   if (isMenuRequest(normalized)) return menuResponse();
   if (isHelpRequest(normalized)) return helpResponse();
+  if (isGreeting(normalized)) return greetingResponse(text);
 
   return null;
 }

@@ -17,9 +17,9 @@ export const assistantReplies: string[] = [
 ];
 
 export const extraItems = [
-  { id: "i3", name: "Brownie com sorvete", quantity: 1, unitPrice: 18.9 },
-  { id: "i4", name: "Batata rústica", quantity: 1, unitPrice: 22.0 },
-  { id: "i5", name: "Suco de laranja 500ml", quantity: 2, unitPrice: 9.5 },
+  { id: "i3", name: "Brownie com sorvete", quantity: 1, unitPrice: 21.90 },
+  { id: "i4", name: "Batata rústica", quantity: 1, unitPrice: 24.90 },
+  { id: "i5", name: "Coca-Cola 2L", quantity: 2, unitPrice: 14.0 },
 ];
 
 export const mockOrders: Order[] = [

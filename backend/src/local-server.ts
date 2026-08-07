@@ -179,22 +179,30 @@ async function runWorkflow(input: WorkflowInput) {
   const summary = buildSummary(items);
   const createdAt = new Date().toISOString();
 
-  // Resposta mencionando o total acumulado do carrinho
-  const newItemList = resolvedNew.map((i) => `${i.quantity}× ${i.name}`).join(", ");
-  const totalLine = `Total do carrinho: R$ ${summary.total.toFixed(2).replace(".", ",")}`;
-  const endings = [
-    "Quer adicionar mais alguma coisa?",
-    "Posso incluir mais algum item?",
-    "Ficou faltando alguma coisa?",
-    "Quer uma sobremesa ou bebida?",
-  ];
-  const ending = endings[Math.floor(Math.random() * endings.length)];
-  const openingOptions = [
-    `Adicionei ${newItemList}! 🛒 ${totalLine}. ${ending}`,
-    `Anotado! ${newItemList} no carrinho. ${totalLine}. ${ending}`,
-    `Perfeito, adicionei ${newItemList}. ${totalLine}. ${ending}`,
-  ];
-  const content = openingOptions[Math.floor(Math.random() * openingOptions.length)];
+  // Resposta com o resumo detalhado do carrinho conforme as novas regras
+  const formatItem = (i: { quantity: number; name: string; id: string }) => {
+    let icon = "🍽️";
+    if (i.id.includes("pizza")) icon = "🍕";
+    else if (i.id.includes("batata") || i.id.includes("onion") || i.id.includes("nuggets")) icon = "🥔";
+    else if (["coca", "guarana", "fanta", "sprite", "agua"].some(b => i.id.includes(b))) icon = "🥤";
+    else if (["brownie", "petit", "pudim", "mousse"].some(s => i.id.includes(s))) icon = "🍰";
+    return `${icon} ${i.quantity} ${i.name.replace(" (G)", "")}`;
+  };
+
+  const hasDrink = items.some(i => ["coca", "guarana", "fanta", "sprite", "agua"].some(b => i.id.includes(b)));
+  const hasDessert = items.some(i => ["brownie", "petit", "pudim", "mousse"].some(s => i.id.includes(s)));
+
+  let ending = "Deseja adicionar algo mais ou podemos finalizar o pedido?";
+  if (!hasDrink) {
+    ending = "Deseja adicionar uma bebida ou podemos finalizar o pedido?";
+  } else if (!hasDessert) {
+    ending = "Deseja adicionar uma sobremesa ou podemos finalizar o pedido?";
+  }
+
+  const itemListText = items.map(formatItem).join("\n");
+  const totalLine = `Total: R$ ${summary.total.toFixed(2).replace(".", ",")}`;
+  
+  const content = `Perfeito! Seu pedido ficou:\n\n${itemListText}\n\n${totalLine}\n\n${ending}`;
 
   const message = {
     id: `m-${Date.now()}`,
